@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 45
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.BETTERFPL_SUPABASE_KEY }}
       SUPABASE_STORAGE_BUCKET: betterfpl-cache
 
     steps:
@@ -50,10 +50,10 @@ jobs:
             echo "SUPABASE_URL is available."
           fi
           if [ -z "$SUPABASE_SECRET_KEY" ]; then
-            echo "::error::GitHub did not provide the repository secret SUPABASE_SECRET_KEY."
+            echo "::error::GitHub did not provide the repository secret BETTERFPL_SUPABASE_KEY."
             missing=1
           else
-            echo "SUPABASE_SECRET_KEY is available."
+            echo "BETTERFPL_SUPABASE_KEY is available."
           fi
           exit "$missing"
 
