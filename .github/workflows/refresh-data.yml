@@ -39,6 +39,24 @@ jobs:
       - name: Install data dependencies
         run: pip install -r requirements.txt
 
+      - name: Check Supabase settings
+        shell: bash
+        run: |
+          missing=0
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "::error::GitHub did not provide the repository secret SUPABASE_URL."
+            missing=1
+          else
+            echo "SUPABASE_URL is available."
+          fi
+          if [ -z "$SUPABASE_SECRET_KEY" ]; then
+            echo "::error::GitHub did not provide the repository secret SUPABASE_SECRET_KEY."
+            missing=1
+          else
+            echo "SUPABASE_SECRET_KEY is available."
+          fi
+          exit "$missing"
+
       - name: Refresh public FPL data
         run: node scripts/refresh-fpl.mjs
 

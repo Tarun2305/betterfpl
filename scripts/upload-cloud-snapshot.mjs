@@ -5,7 +5,8 @@ import { createClient } from '@supabase/supabase-js';
 const url = process.env.SUPABASE_URL;
 const secretKey = process.env.SUPABASE_SECRET_KEY;
 const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'betterfpl-cache';
-if (!url || !secretKey) throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY are required');
+if (!url) throw new Error('GitHub did not provide SUPABASE_URL');
+if (!secretKey) throw new Error('GitHub did not provide SUPABASE_SECRET_KEY');
 
 const files = ['fpl-data.json', 'analytics-data.json', 'enrichment-data.json'];
 const payloads = new Map();
