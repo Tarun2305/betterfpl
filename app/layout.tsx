@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'BetterFPL',
-  description: 'A private, local-first Fantasy Premier League research dashboard.',
+  description: 'A modern Fantasy Premier League research and planning dashboard.',
 };
 
 export default function RootLayout({

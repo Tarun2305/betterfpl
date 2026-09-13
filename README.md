@@ -1,52 +1,39 @@
 # BetterFPL
 
-A lightweight Fantasy Premier League research dashboard. It uses only public FPL data and does not connect to an FPL account.
+BetterFPL is an independent Fantasy Premier League research dashboard that turns public football data into a clearer gameweek decision-making workspace.
 
-## Start it
+**Live site:** [betterfpl.vercel.app](https://betterfpl.vercel.app)
 
-Double-click `start-dashboard.cmd`, then open <http://localhost:3000> if the browser does not open automatically. Keep the small command window open while using the dashboard.
+## What it does
 
-## Features
+BetterFPL brings player research, fixture analysis and squad planning into one account-free interface. The home dashboard highlights timely players, transfer trends and upcoming fixtures, while the deeper workspaces make it easy to:
 
-- Public FPL player and fixture data with a bundled offline fallback
-- Player search, position/team/price filters and sortable metrics
-- FPL totals alongside expected goals, assists and involvement metrics
-- Persistent on-device shortlist, status, tags and notes
-- Three-player comparison tray
-- Upcoming fixtures grouped by gameweek with FPL difficulty ratings
-- Team dashboards with squad totals, leading assets and six-fixture runs
-- Transparent one- and three-gameweek player projections
-- Minutes reliability, expected involvement per 90 and transfer momentum
-- A persistent 15-player squad planner with budget, club and position checks
-- Captain selection and projected next-gameweek total
-- Completed-match centre with selectable Premier League matches
-- Understat shot maps and cumulative expected-goals timelines
-- Match-level xG, non-penalty xG, expected points, PPDA and deep completions
-- Player match contributions including shots, xG, xA, key passes and xG chain
-- Tactical team profiles and a match-by-match performance log
-- Unified player drawer with FPL overview, Understat per-90 metrics and recent-match logs
-- Upcoming attacking matchup rankings inside Projections, blending team xG, opponent xGA, territory and press indicators
+- Search and filter the full FPL player pool
+- Shortlist players and keep private notes in the browser
+- Compare up to three players side by side
+- Review upcoming fixtures and difficulty ratings
+- Explore completed matches through shot maps and xG timelines
+- Inspect team performance, tactical profiles and recent match logs
+- Rank players using transparent one- and three-gameweek projections
+- Build a 15-player squad and check its budget, structure and captaincy
+- Load a public FPL team by its team ID for planning
 
-## Data behaviour
+## How to use it
 
-In production the dashboard reads its FPL, Understat, WhoScored and Elo snapshots from the private `betterfpl-cache` Supabase bucket through a server-only route. Browser responses explicitly disable dataset caching. A scheduled GitHub Action refreshes and validates the snapshots daily, then switches the dashboard to the completed snapshot. Bundled JSON files remain only as a deployment-safe fallback when Supabase has not been configured or is temporarily unavailable.
+Open the live site and use the menu in the top-left to move between workspaces. Clicking a player opens a detailed view with official FPL totals, underlying numbers, recent matches, fixtures and personal planning tools.
 
-Understat provides shot events and useful match-level analytical measures, but not the complete pass-event or tracking feeds required for honest pass networks and off-ball maps. Those views are deliberately omitted instead of being approximated from unrelated data.
+No FPL login is required. Shortlists, notes, theme and planner choices are stored only in the current browser, so they stay private to that device and browser profile.
 
-The projection is deliberately transparent: 60% recent FPL form, 40% season points per match, then adjustments for fixture difficulty, minutes reliability and current availability. It is a planning estimate, not an official FPL or betting prediction.
+## Data and projections
 
-Shortlists and notes use browser storage. They remain private to this browser profile and can be lost if the site data for `localhost` is cleared.
+The dashboard combines public FPL data with Understat match and player metrics, selected WhoScored event data and team-strength ratings. Snapshots are refreshed automatically, with bundled demonstration data available as a fallback.
 
-## Refresh the data snapshot
+Player projections deliberately use a simple, understandable model: recent form and season points-per-match are adjusted for fixture difficulty, expected minutes and availability. They are planning estimates—not official predictions, bookmaker odds or guarantees.
 
-The GitHub workflow in `.github/workflows/refresh-data.yml` runs every day at 03:17 UTC and can also be started manually from the repository's Actions page. It refreshes all three datasets and uploads an immutable snapshot to Supabase. WhoScored runs headlessly and keeps the previous snapshot if scraping is blocked. ClubElo's public endpoint is currently unreliable, so BetterFPL automatically uses a locally calculated, results-based Elo rating until the official feed responds again.
+Some analytical views are intentionally omitted when the available public data cannot support them honestly. For example, reliable pass networks and off-ball maps require complete event or tracking feeds.
 
-For local-only refreshing, `refresh-data.cmd` is still available.
+## Project status
 
-## Deployment settings
+BetterFPL is an actively evolving personal project built to make FPL research quicker, more visual and less fragmented. Feedback and suggestions are welcome.
 
-GitHub Actions requires two repository secrets named `SUPABASE_URL` and `SUPABASE_SECRET_KEY`. Vercel requires environment variables with the same names; `SUPABASE_STORAGE_BUCKET=betterfpl-cache` is optional because that is the built-in default. Never prefix the secret with `NEXT_PUBLIC_`.
-
-Code pushes to `main` deploy through Vercel. Daily dataset refreshes update Supabase directly and therefore do not create unnecessary website deployments.
-
-Shortlists, notes, theme and planner choices remain tiny browser preferences so that the public, account-free site can distinguish one visitor's choices from another's. The large sports datasets are never persisted in browser storage. Removing those preferences entirely would make them reset on every reload; cloud-synchronised personal preferences can be added later only if user accounts are introduced.
+BetterFPL is not affiliated with or endorsed by the Premier League.

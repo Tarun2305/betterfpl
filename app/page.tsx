@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Activity, ArrowDown, ArrowUp, CalendarDays, Check, ChevronsUpDown, ClipboardList, Crosshair, GitCompareArrows, Menu, Moon, Plus, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Star, Sun, TrendingUp, Users, X } from 'lucide-react';
+import { Activity, ArrowDown, ArrowRight, ArrowUp, CalendarDays, Check, ChevronsUpDown, ClipboardList, Crosshair, Flame, GitCompareArrows, House, Menu, Moon, Plus, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Star, Sun, TrendingUp, Users, X } from 'lucide-react';
 
 import { PlannerWorkspace } from '@/components/planner-workspace';
 
@@ -40,7 +40,7 @@ import { emptyEnrichment, type EnrichmentData, type WhoScoredPlayer } from '@/li
 
 
 
-type View = 'players' | 'shortlist' | 'compare' | 'fixtures' | 'matches' | 'teams' | 'tactics' | 'projections' | 'planner';
+type View = 'home' | 'players' | 'shortlist' | 'compare' | 'fixtures' | 'matches' | 'teams' | 'tactics' | 'projections' | 'planner';
 
 type SortKey = 'points' | 'form' | 'selected' | 'price' | 'minutes' | 'value' | 'xGI' | 'transfersIn';
 
@@ -75,6 +75,8 @@ type ImportedFplTeam = {
 
 
 const navItems: { id: View; label: string; icon: typeof Users }[] = [
+
+  { id: 'home', label: 'Home', icon: House },
 
   { id: 'players', label: 'Players', icon: Users },
 
@@ -248,7 +250,7 @@ export default function Home() {
 
   const [loading, setLoading] = useState(true);
 
-  const [view, setView] = useState<View>('players');
+  const [view, setView] = useState<View>('home');
 
   const [query, setQuery] = useState('');
 
@@ -522,6 +524,15 @@ export default function Home() {
 
   })).sort((a, b) => b.next3 - a.next3), [data]);
 
+  const gameweekPicks = useMemo(() => [...projectedPlayers].sort((a, b) => b.next - a.next).slice(0, 5), [projectedPlayers]);
+
+  const transferTrends = useMemo(() => [...data.players].sort((a, b) => b.transfersIn - a.transfersIn).slice(0, 3), [data.players]);
+
+  const headlineFixtures = useMemo(() => {
+    const nextEvent = [...new Set(data.fixtures.map((fixture) => fixture.event).filter((event): event is number => event !== null))].sort((a, b) => a - b)[0];
+    return data.fixtures.filter((fixture) => fixture.event === nextEvent).slice(0, 3);
+  }, [data.fixtures]);
+
   const visibleProjectedPlayers = useMemo(() => {
 
     const needle = projectionQuery.trim().toLowerCase();
@@ -756,11 +767,39 @@ export default function Home() {
 
       <div className="mx-auto max-w-[1700px]">
 
-        <section className="min-w-0 px-4 py-4 sm:px-8"><div className="mb-3 flex items-end justify-between"><h2 className="workspace-title">{navItems.find((item) => item.id === view)?.label}</h2></div>
+        <section className={`min-w-0 px-4 sm:px-8 ${view === 'home' ? 'home-shell py-3' : 'py-4'}`}><div className={view === 'home' ? 'sr-only' : 'mb-3 flex items-end justify-between'}><h2 className="workspace-title">{navItems.find((item) => item.id === view)?.label}</h2></div>
 
           {data.message && <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"><span className="mt-1 size-2 shrink-0 rounded-full bg-amber-500" /><p>{data.message}</p></div>}
 
 
+
+          {view === 'home' && <div className="home-dashboard">
+            <section className="home-hero home-panel">
+              <div className="relative z-10 max-w-2xl">
+                <Badge className="mb-3 bg-white/15 text-white hover:bg-white/15">Gameweek {data.gameweek ?? '—'} briefing</Badge>
+                <h2>Your gameweek,<br /><span>read at a glance.</span></h2>
+                <p>Form, fixtures and transfer momentum brought together before you make the next move.</p>
+                <div className="mt-4 flex flex-wrap gap-2"><Button variant="secondary" onClick={() => setView('projections')}>Explore projections <ArrowRight className="size-4" /></Button><Button className="border-white/30 bg-white/10 text-white hover:bg-white/20" variant="outline" onClick={() => setView('planner')}>Open planner</Button></div>
+              </div>
+              <div className="home-orbit" aria-hidden="true"><span>{data.gameweek ?? 'FPL'}</span><small>GW</small></div>
+            </section>
+
+            <section className="home-panel home-picks">
+              <div className="home-panel-heading"><div><p className="eyebrow">Model watch</p><h3>Likely to perform</h3></div><TrendingUp className="size-5 text-primary" /></div>
+              <div className="home-player-list">{gameweekPicks.map(({ player, next }, index) => <button key={player.id} onClick={() => setActivePlayerId(player.id)} className="home-player-row"><span className="rank">{index + 1}</span><ClubBadge code={teamByShortName.get(player.team)?.code} shortName={player.team} name={player.teamName} /><span className="min-w-0 flex-1 text-left"><b>{player.name}</b><small>{player.team} · {player.position} · {player.nextFixture}</small></span><strong>{next.toFixed(1)}<small>xPts</small></strong></button>)}</div>
+            </section>
+
+            <section className="home-panel home-transfers">
+              <div className="home-panel-heading"><div><p className="eyebrow">Market pulse</p><h3>Most transferred in</h3></div><Flame className="size-5 text-orange-500" /></div>
+              <div className="home-player-list">{transferTrends.map((player) => <button key={player.id} onClick={() => setActivePlayerId(player.id)} className="home-player-row"><ClubBadge code={teamByShortName.get(player.team)?.code} shortName={player.team} name={player.teamName} /><span className="min-w-0 flex-1 text-left"><b>{player.name}</b><small>{player.team} · £{player.price.toFixed(1)}m</small></span><strong className="transfer-count">+{formatNumber(player.transfersIn)}</strong></button>)}</div>
+            </section>
+
+            <section className="home-panel home-fixtures">
+              <div className="home-panel-heading"><div><p className="eyebrow">Next up</p><h3>Fixtures to watch</h3></div><button onClick={() => setView('fixtures')} className="text-sm font-bold text-primary hover:underline">All fixtures</button></div>
+              <div className="home-fixture-grid">{headlineFixtures.map((fixture) => <div key={fixture.id} className="home-fixture"><span className={`fdr-dot ${fixture.homeDifficulty <= 2 || fixture.awayDifficulty >= 4 ? 'favourable' : ''}`} /><div className="min-w-0"><b>{fixture.homeCode} <span>vs</span> {fixture.awayCode}</b><small>{formatFixtureDate(fixture.kickoff)}</small></div><div className="flex gap-1"><span className={fdrClass(fixture.homeDifficulty)}>{fixture.homeDifficulty}</span><span className={fdrClass(fixture.awayDifficulty)}>{fixture.awayDifficulty}</span></div></div>)}</div>
+            </section>
+
+          </div>}
 
           {(view === 'players' || view === 'shortlist') && <>
 
