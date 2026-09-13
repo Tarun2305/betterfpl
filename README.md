@@ -1,6 +1,6 @@
 # BetterFPL
 
-A private, local-first Fantasy Premier League research dashboard. It does not connect to an FPL account and does not upload your shortlist or notes.
+A lightweight Fantasy Premier League research dashboard. It uses only public FPL data and does not connect to an FPL account.
 
 ## Start it
 
@@ -29,7 +29,7 @@ Double-click `start-dashboard.cmd`, then open <http://localhost:3000> if the bro
 
 ## Data behaviour
 
-The start script downloads the public no-login FPL player and fixture feeds into `public/fpl-data.json` before opening the dashboard. It also uses the local Python environment and SoccerData's Understat reader to refresh completed-match analytics in `public/analytics-data.json`. WhoScored event summaries and ClubElo ratings refresh in the background into `public/enrichment-data.json`, so their slower or temporarily unavailable services never delay the dashboard. All caches keep their last successful data when a source is unreachable; if no FPL cache exists, the interface remains usable with demonstration data.
+In production the dashboard reads its FPL, Understat, WhoScored and Elo snapshots from the private `betterfpl-cache` Supabase bucket through a server-only route. Browser responses explicitly disable dataset caching. A scheduled GitHub Action refreshes and validates the snapshots daily, then switches the dashboard to the completed snapshot. Bundled JSON files remain only as a deployment-safe fallback when Supabase has not been configured or is temporarily unavailable.
 
 Understat provides shot events and useful match-level analytical measures, but not the complete pass-event or tracking feeds required for honest pass networks and off-ball maps. Those views are deliberately omitted instead of being approximated from unrelated data.
 
@@ -39,15 +39,14 @@ Shortlists and notes use browser storage. They remain private to this browser pr
 
 ## Refresh the data snapshot
 
-Run `refresh-data.cmd` before a deployment when you want fresh Understat and WhoScored-derived data. The FPL endpoints also refresh on demand when the deployed dashboard is opened. WhoScored runs headlessly and keeps the previous snapshot if scraping is blocked. ClubElo's public endpoint is currently unreliable, so BetterFPL automatically uses a locally calculated, results-based Elo rating until the official feed responds again.
+The GitHub workflow in `.github/workflows/refresh-data.yml` runs every day at 03:17 UTC and can also be started manually from the repository's Actions page. It refreshes all three datasets and uploads an immutable snapshot to Supabase. WhoScored runs headlessly and keeps the previous snapshot if scraping is blocked. ClubElo's public endpoint is currently unreliable, so BetterFPL automatically uses a locally calculated, results-based Elo rating until the official feed responds again.
 
-## Deploy with Vercel and GitHub
+For local-only refreshing, `refresh-data.cmd` is still available.
 
-1. Create an empty GitHub repository named `betterfpl`.
-2. In this folder, run `git add .`, `git commit -m "Initial BetterFPL release"`, `git remote add origin YOUR_GITHUB_REPOSITORY_URL`, then `git push -u origin main`.
-3. Sign in to Vercel, choose **Add New → Project**, import the GitHub repository, and leave the detected **Next.js** settings unchanged.
-4. Deploy. Vercel will give you a production URL and will build a preview for later branches and pull requests.
+## Deployment settings
 
-For future interface changes, commit and push to `main`; Vercel will rebuild the production site automatically. For data-only updates, run `refresh-data.cmd`, commit the changed files in `public`, and push them the same way.
+GitHub Actions requires two repository secrets named `SUPABASE_URL` and `SUPABASE_SECRET_KEY`. Vercel requires environment variables with the same names; `SUPABASE_STORAGE_BUCKET=betterfpl-cache` is optional because that is the built-in default. Never prefix the secret with `NEXT_PUBLIC_`.
 
-The shortlist, notes, theme, and planner are stored in each browser, so they do not sync between friends or devices. A Vercel Hobby production URL is public unless an application-level login or a paid protection option is added.
+Code pushes to `main` deploy through Vercel. Daily dataset refreshes update Supabase directly and therefore do not create unnecessary website deployments.
+
+Shortlists, notes, theme and planner choices remain tiny browser preferences so that the public, account-free site can distinguish one visitor's choices from another's. The large sports datasets are never persisted in browser storage. Removing those preferences entirely would make them reset on every reload; cloud-synchronised personal preferences can be added later only if user accounts are introduced.

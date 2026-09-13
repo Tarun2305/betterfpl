@@ -73,8 +73,7 @@ export function MatchCentre({ data }: { data: AnalyticsData }) {
     const needle=query.trim().toLowerCase();
     return teamMatch&&(!needle||match.homeTeam.toLowerCase().includes(needle)||match.awayTeam.toLowerCase().includes(needle));
   }).sort((a,b)=>b.date.localeCompare(a.date)), [rounds, gameweek, team, query]);
-  useEffect(()=>{ const saved=window.localStorage.getItem('pl-workbench-match'); const savedId=saved?Number(saved):null; if(savedId&&ordered.some((match)=>match.id===savedId)){setMatchId(savedId);const week=[...rounds.entries()].find(([,matches])=>matches.some((match)=>match.id===savedId))?.[0];if(week)setGameweek(week);}else if(ordered.length)setGameweek(Math.max(...rounds.keys())); },[ordered,rounds]);
-  useEffect(()=>{ if(matchId)window.localStorage.setItem('pl-workbench-match',String(matchId)); },[matchId]);
+  useEffect(()=>{ if(ordered.length){ setGameweek(Math.max(...rounds.keys())); setMatchId((current)=>current&&ordered.some((match)=>match.id===current)?current:ordered[0].id); } },[ordered,rounds]);
 
   const detailIndex = useMemo(() => {
     const shots = new Map<number, AnalyticsShot[]>();

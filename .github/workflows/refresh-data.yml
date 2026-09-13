@@ -1,0 +1,52 @@
+name: Refresh BetterFPL data
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_STORAGE_BUCKET: betterfpl-cache
+
+    steps:
+      - name: Download the BetterFPL code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install website dependencies
+        run: npm ci
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install data dependencies
+        run: pip install -r requirements.txt
+
+      - name: Refresh public FPL data
+        run: node scripts/refresh-fpl.mjs
+
+      - name: Refresh match analytics
+        run: python scripts/refresh-analytics.py
+
+      - name: Refresh WhoScored and Elo enrichment
+        run: python scripts/refresh-enrichment.py
+
+      - name: Publish the validated cloud snapshot
+        run: node scripts/upload-cloud-snapshot.mjs

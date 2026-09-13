@@ -308,13 +308,7 @@ export default function Home() {
 
         try {
 
-          let response = await fetch(`/fpl-data.json?refresh=${Date.now()}`, { cache: 'no-store' });
-
-          if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
-
-            response = await fetch('/api/fpl', { cache: 'no-store' });
-
-          }
+          const response = await fetch('/api/data/fpl', { cache: 'no-store' });
 
           if (!response.ok) throw new Error('Unable to load the local data service');
 
@@ -334,7 +328,7 @@ export default function Home() {
 
         try {
 
-          const response = await fetch(`/enrichment-data.json?refresh=${Date.now()}`, { cache: 'no-store' });
+          const response = await fetch('/api/data/enrichment', { cache: 'no-store' });
 
           if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) throw new Error('Unable to load enrichment cache');
 
@@ -352,7 +346,7 @@ export default function Home() {
 
         try {
 
-          const response = await fetch(`/analytics-data.json?refresh=${Date.now()}`, { cache: 'no-store' });
+          const response = await fetch('/api/data/analytics', { cache: 'no-store' });
 
           if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) throw new Error('Unable to load analytics cache');
 
