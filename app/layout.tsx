@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import './home-dashboard.css';
 
 export const metadata: Metadata = {
   title: 'BetterFPL',

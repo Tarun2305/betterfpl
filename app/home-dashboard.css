@@ -1,0 +1,95 @@
+/*
+ * Keep the dashboard in its own stylesheet so each layout revision receives a
+ * fresh production asset instead of inheriting a stale, immutable CSS chunk.
+ */
+.home-dashboard {
+  grid-template-areas:
+    "hero hero picks"
+    "transfer-in transfer-out fixtures";
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(320px, 1.18fr) minmax(220px, .82fr);
+}
+
+.home-dashboard > * {
+  min-width: 0;
+  min-height: 0;
+}
+
+.home-dashboard > .home-hero {
+  grid-area: hero;
+}
+
+.home-dashboard > .home-picks {
+  grid-area: picks;
+  grid-row: picks;
+}
+
+.home-dashboard > .home-transfers {
+  grid-area: transfer-in;
+}
+
+.home-dashboard > .home-transfers-out {
+  grid-area: transfer-out;
+}
+
+.home-dashboard > .home-fixtures {
+  grid-area: fixtures;
+  grid-column: fixtures;
+}
+
+.home-hero-content,
+.home-panel-heading > div,
+.home-player-row > span {
+  min-width: 0;
+}
+
+.home-news-list a {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.home-news-list small {
+  max-width: 12.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-inline-link {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1000px) {
+  .home-dashboard {
+    grid-template-areas:
+      "hero hero"
+      "picks transfer-in"
+      "transfer-out fixtures";
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+  }
+
+  .home-dashboard > .home-hero,
+  .home-dashboard > .home-picks,
+  .home-dashboard > .home-transfers,
+  .home-dashboard > .home-transfers-out,
+  .home-dashboard > .home-fixtures {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-dashboard {
+    grid-template-areas:
+      "hero"
+      "picks"
+      "transfer-in"
+      "transfer-out"
+      "fixtures";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-news-list small {
+    max-width: 100%;
+  }
+}
