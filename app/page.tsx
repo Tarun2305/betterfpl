@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Activity, ArrowDown, ArrowRight, ArrowUp, CalendarDays, Check, ChevronsUpDown, ClipboardList, Crosshair, Flame, GitCompareArrows, House, Menu, Moon, Plus, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Star, Sun, TrendingUp, Users, X } from 'lucide-react';
+import { Activity, ArrowDown, ArrowRight, ArrowUp, CalendarDays, Check, ChevronsUpDown, ClipboardList, Crosshair, Flame, GitCompareArrows, House, Menu, Moon, Plus, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Star, Sun, TrendingDown, TrendingUp, Users, X } from 'lucide-react';
 
 import { PlannerWorkspace } from '@/components/planner-workspace';
 
@@ -47,6 +47,14 @@ type SortKey = 'points' | 'form' | 'selected' | 'price' | 'minutes' | 'value' | 
 type PlayerMeta = { status: 'watch' | 'target' | 'avoid'; notes: string; tags: string };
 
 type MetaMap = Record<number, PlayerMeta>;
+
+type FplNewsStory = { id: number; title: string; date: string; url: string; source: string };
+
+const fallbackNews: FplNewsStory[] = [
+  { id: -1, title: 'Latest Fantasy Premier League news', date: '', url: 'https://www.premierleague.com/en/news', source: 'Premier League' },
+  { id: -2, title: 'Check the latest player injury updates', date: '', url: 'https://www.premierleague.com/en/latest-player-injuries', source: 'Premier League' },
+  { id: -3, title: 'Open the official Fantasy Premier League game', date: '', url: 'https://fantasy.premierleague.com/', source: 'Official FPL' },
+];
 
 type ImportedFplTeam = {
 
@@ -224,6 +232,12 @@ function SortButton({ label, column, sortKey, direction, onSort }: { label: stri
 
 }
 
+function formatRefreshTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Refresh time unavailable';
+  return `${formatFixtureDate(value)} · ${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')} UTC`;
+}
+
 function normalizedName(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -247,6 +261,8 @@ export default function Home() {
   const [analytics, setAnalytics] = useState<AnalyticsData>(emptyAnalytics);
 
   const [enrichment, setEnrichment] = useState<EnrichmentData>(emptyEnrichment);
+
+  const [newsStories, setNewsStories] = useState<FplNewsStory[]>(fallbackNews);
 
   const [loading, setLoading] = useState(true);
 
@@ -360,6 +376,17 @@ export default function Home() {
 
         }
 
+      })(),
+
+      (async () => {
+        try {
+          const response = await fetch('/api/fpl-news');
+          if (!response.ok) throw new Error('Unable to load FPL news');
+          const payload = await response.json() as { stories?: FplNewsStory[] };
+          if (payload.stories?.length) setNewsStories(payload.stories.slice(0, 3));
+        } catch {
+          setNewsStories(fallbackNews);
+        }
       })(),
 
     ]);
@@ -528,9 +555,14 @@ export default function Home() {
 
   const transferTrends = useMemo(() => [...data.players].sort((a, b) => b.transfersIn - a.transfersIn).slice(0, 3), [data.players]);
 
+  const transferFalls = useMemo(() => [...data.players].sort((a, b) => b.transfersOut - a.transfersOut).slice(0, 3), [data.players]);
+
   const headlineFixtures = useMemo(() => {
     const nextEvent = [...new Set(data.fixtures.map((fixture) => fixture.event).filter((event): event is number => event !== null))].sort((a, b) => a - b)[0];
-    return data.fixtures.filter((fixture) => fixture.event === nextEvent).slice(0, 3);
+    return data.fixtures
+      .filter((fixture) => fixture.event === nextEvent)
+      .sort((a, b) => Math.abs(b.homeDifficulty - b.awayDifficulty) - Math.abs(a.homeDifficulty - a.awayDifficulty))
+      .slice(0, 3);
   }, [data.fixtures]);
 
   const visibleProjectedPlayers = useMemo(() => {
@@ -751,7 +783,7 @@ export default function Home() {
 
         <div className="mx-auto grid max-w-[1700px] grid-cols-[1fr_auto_1fr] items-center px-4 py-3 sm:px-8">
 
-          <div className="flex justify-start"><Button size="icon" variant="ghost" onClick={() => setMenuOpen(true)} aria-label="Open navigation"><Menu /></Button></div><h1 className="wordmark text-center">Better<span>FPL</span></h1>
+          <div className="flex justify-start"><Button size="icon" variant="ghost" onClick={() => setMenuOpen(true)} aria-label="Open navigation"><Menu /></Button></div><h1 className="text-center"><button className="wordmark" onClick={() => setView('home')} aria-label="Go to BetterFPL home">Better<span>FPL</span></button></h1>
 
           <div className="flex justify-end"><Button size="icon" variant="ghost" onClick={() => setDarkMode((current) => !current)} aria-label={darkMode ? 'Use light mode' : 'Use dark mode'}>{darkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}</Button></div>
 
@@ -775,23 +807,28 @@ export default function Home() {
 
           {view === 'home' && <div className="home-dashboard">
             <section className="home-hero home-panel">
-              <div className="relative z-10 max-w-2xl">
+              <div className="home-hero-content relative z-10">
                 <Badge className="mb-3 bg-white/15 text-white hover:bg-white/15">Gameweek {data.gameweek ?? '—'} briefing</Badge>
                 <h2>Your gameweek,<br /><span>read at a glance.</span></h2>
-                <p>Form, fixtures and transfer momentum brought together before you make the next move.</p>
-                <div className="mt-4 flex flex-wrap gap-2"><Button variant="secondary" onClick={() => setView('projections')}>Explore projections <ArrowRight className="size-4" /></Button><Button className="border-white/30 bg-white/10 text-white hover:bg-white/20" variant="outline" onClick={() => setView('planner')}>Open planner</Button></div>
+                <div className="home-news-list">{newsStories.map((story) => <a key={story.id} href={story.url} target="_blank" rel="noreferrer"><span>{story.title}</span><small>{story.source}{story.date ? ` · ${formatFixtureDate(story.date)}` : ''} <ArrowRight className="size-3" /></small></a>)}</div>
+                <div className="home-hero-actions"><Button variant="secondary" onClick={() => setView('projections')}>Explore projections <ArrowRight className="size-4" /></Button><Button className="border-white/30 bg-white/10 text-white hover:bg-white/20" variant="outline" onClick={() => setView('planner')}>Open planner</Button><span>Data refreshed {formatRefreshTime(data.fetchedAt)}</span></div>
               </div>
               <div className="home-orbit" aria-hidden="true"><span>{data.gameweek ?? 'FPL'}</span><small>GW</small></div>
             </section>
 
             <section className="home-panel home-picks">
-              <div className="home-panel-heading"><div><p className="eyebrow">Model watch</p><h3>Likely to perform</h3></div><TrendingUp className="size-5 text-primary" /></div>
+              <div className="home-panel-heading"><div><p className="eyebrow">Model watch</p><h3>Likely to perform</h3></div><button className="home-inline-link" onClick={() => setView('projections')}>View all <TrendingUp className="size-4" /></button></div>
               <div className="home-player-list">{gameweekPicks.map(({ player, next }, index) => <button key={player.id} onClick={() => setActivePlayerId(player.id)} className="home-player-row"><span className="rank">{index + 1}</span><ClubBadge code={teamByShortName.get(player.team)?.code} shortName={player.team} name={player.teamName} /><span className="min-w-0 flex-1 text-left"><b>{player.name}</b><small>{player.team} · {player.position} · {player.nextFixture}</small></span><strong>{next.toFixed(1)}<small>xPts</small></strong></button>)}</div>
             </section>
 
             <section className="home-panel home-transfers">
               <div className="home-panel-heading"><div><p className="eyebrow">Market pulse</p><h3>Most transferred in</h3></div><Flame className="size-5 text-orange-500" /></div>
               <div className="home-player-list">{transferTrends.map((player) => <button key={player.id} onClick={() => setActivePlayerId(player.id)} className="home-player-row"><ClubBadge code={teamByShortName.get(player.team)?.code} shortName={player.team} name={player.teamName} /><span className="min-w-0 flex-1 text-left"><b>{player.name}</b><small>{player.team} · £{player.price.toFixed(1)}m</small></span><strong className="transfer-count">+{formatNumber(player.transfersIn)}</strong></button>)}</div>
+            </section>
+
+            <section className="home-panel home-transfers-out">
+              <div className="home-panel-heading"><div><p className="eyebrow">Market pulse</p><h3>Most transferred out</h3></div><TrendingDown className="size-5 text-rose-500" /></div>
+              <div className="home-player-list">{transferFalls.map((player) => <button key={player.id} onClick={() => setActivePlayerId(player.id)} className="home-player-row"><ClubBadge code={teamByShortName.get(player.team)?.code} shortName={player.team} name={player.teamName} /><span className="min-w-0 flex-1 text-left"><b>{player.name}</b><small>{player.team} · £{player.price.toFixed(1)}m{player.news ? ' · flagged' : ''}</small></span><strong className="transfer-count transfer-count-out">−{formatNumber(player.transfersOut)}</strong></button>)}</div>
             </section>
 
             <section className="home-panel home-fixtures">
