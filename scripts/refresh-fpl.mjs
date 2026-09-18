@@ -7,6 +7,7 @@ const output = resolve(root, 'public', 'fpl-data.json');
 const temporary = `${output}.tmp`;
 const positions = ['GKP', 'DEF', 'MID', 'FWD'];
 const numeric = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+const nullableNumeric = (value) => value === null || value === undefined || value === '' ? null : Number.isFinite(Number(value)) ? Number(value) : null;
 
 async function request(url) {
   const response = await fetch(url, {
@@ -45,6 +46,7 @@ try {
     const next = nextByTeam.get(item.team);
     const price = item.now_cost / 10;
     return {
+      predictionStats: { xg:nullableNumeric(item.expected_goals),xa:nullableNumeric(item.expected_assists),newsUpdatedAt:item.news_added??null,penaltiesOrder:nullableNumeric(item.penalties_order),cornersOrder:nullableNumeric(item.corners_and_indirect_freekicks_order),freeKicksOrder:nullableNumeric(item.direct_freekicks_order) },
       id: item.id, name: item.web_name, fullName: `${item.first_name} ${item.second_name}`.trim(), team: team?.short_name ?? '—', teamName: team?.name ?? 'Unknown', position: positions[item.element_type - 1] ?? 'MID', price,
       points: numeric(item.total_points), form: numeric(item.form), selected: numeric(item.selected_by_percent), minutes: numeric(item.minutes), starts: numeric(item.starts), pointsPerGame: numeric(item.points_per_game), value: price ? Number((numeric(item.total_points) / price).toFixed(1)) : 0,
       goals: numeric(item.goals_scored), assists: numeric(item.assists), cleanSheets: numeric(item.clean_sheets), bonus: numeric(item.bonus), bps: numeric(item.bps), ict: numeric(item.ict_index), influence: numeric(item.influence), creativity: numeric(item.creativity), threat: numeric(item.threat),

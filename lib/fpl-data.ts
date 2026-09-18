@@ -11,6 +11,7 @@ export type Fixture = {
 };
 
 export type Player = {
+  predictionStats?: { xg:number|null; xa:number|null; newsUpdatedAt:string|null; penaltiesOrder:number|null; cornersOrder:number|null; freeKicksOrder:number|null };
   id: number;
   name: string;
   fullName: string;
