@@ -8,6 +8,7 @@ import { planReleases, type PredictionSchedule } from '../lib/prediction-schedul
 import { runPredictionRelease } from '../lib/prediction-worker';
 import { publication } from '../lib/prediction-publication';
 import { fetchOfficialEvidence } from '../lib/prediction-evidence';
+import { isMissingStorageObject } from '../lib/prediction-storage-errors';
 import type { DashboardData } from '../lib/fpl-data';
 import type { AnalyticsData } from '../lib/analytics-data';
 import type { EnrichmentData } from '../lib/enrichment-data';
@@ -37,7 +38,7 @@ const schedule=await json<PredictionSchedule>(resolve(predictionDirectory(),'sch
 const directory=resolve(predictionDirectory(),'cloud');
 await mkdir(directory,{recursive:true});
 const {data,error}=await storage.download('predictions/private/state.sqlite');
-if (error && String((error as {statusCode?:string}).statusCode)!=='404') throw error;
+if (error && !await isMissingStorageObject(error)) throw error;
 if (data) await writeFile(resolve(directory,'predictions.sqlite'),new Uint8Array(await data.arrayBuffer()));
 const store=await PredictionStore.open(directory,bytes=>upload('predictions/private/state.sqlite',bytes));
 try {
@@ -48,7 +49,7 @@ try {
     // Check claims before refreshing analytics. Only a missing object permits work.
     const claim=await storage.download(claimPath);
     if (claim.data) { console.log(`${release.id}: already claimed; no new requests.`); continue; }
-    if (claim.error && String((claim.error as {statusCode?:string}).statusCode)!=='404') throw claim.error;
+    if (claim.error && !await isMissingStorageObject(claim.error)) throw claim.error;
     await run(process.env.PREDICTION_PYTHON || 'python',['scripts/refresh-analytics.py']);
     await run(process.env.PREDICTION_PYTHON || 'python',['scripts/refresh-enrichment.py']);
     const [fpl,analytics,enrichment]=await Promise.all([json<DashboardData>('public/fpl-data.json'),json<AnalyticsData>('public/analytics-data.json'),json<EnrichmentData>('public/enrichment-data.json')]);

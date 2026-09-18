@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { isMissingStorageObject } from './prediction-storage-errors';
 
 export const cloudDatasetFiles = {
   fpl: 'fpl-data.json',
@@ -33,7 +34,7 @@ async function downloadText(path: string) {
 export async function readCloudPredictions() {
   const client=createStorageClient();
   const {data,error}=await client.storage.from(process.env.SUPABASE_STORAGE_BUCKET || 'betterfpl-cache').download('predictions/latest.json');
-  if (error && String((error as {statusCode?:string}).statusCode)==='404') return {predictions:{},fixtures:[],gameweek:null,message:'Awaiting the first scheduled predictions.'};
+  if (await isMissingStorageObject(error)) return {predictions:{},gameweek:null,message:'Awaiting the first scheduled predictions.'};
   if (error || !data) throw error || new Error('Prediction cache unavailable');
   return JSON.parse(await data.text());
 }

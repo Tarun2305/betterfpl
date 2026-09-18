@@ -12,8 +12,21 @@ import { preparePrediction, validatePrediction, type PreparedPrediction } from '
 import { PredictionStore, lockPredictions } from '../lib/prediction-store';
 import { runPredictionRelease, type SavedFixture } from '../lib/prediction-worker';
 import { validateEvidence } from '../lib/prediction-evidence';
+import { createClient } from '@supabase/supabase-js';
+import { isMissingStorageObject } from '../lib/prediction-storage-errors';
 
 const now=Date.parse('2026-09-18T06:00:00Z');
+
+test('installed storage SDK missing-download wrapper is distinguished from real failures',async()=>{
+  for (const [statusCode,message,missing] of [['404','Object not found',true],['404','Bucket not found',false],['403','Access denied',false],['500','Internal error',false]] as const) {
+    const client=createClient('https://example.supabase.co','test-only-key',{global:{fetch:async()=>new Response(JSON.stringify({statusCode,message}),{status:400,headers:{'Content-Type':'application/json'}})}});
+    const {error}=await client.storage.from('test').download('missing.json');
+    assert.ok(error);
+    assert.equal(await isMissingStorageObject(error),missing);
+  }
+  assert.equal(await isMissingStorageObject(new Error('network unavailable')),false);
+  assert.equal(await isMissingStorageObject({statusCode:'404',message:'Object not found'}),true);
+});
 const fixture={...sampleData.fixtures[1],id:42,event:5,kickoff:'2026-09-19T15:00:00Z'};
 const input:PredictionInput={fpl:{...sampleData,source:'live',fixtures:[fixture],gameweek:4},analytics:emptyAnalytics,enrichment:emptyEnrichment,fixtureId:fixture.id};
 const schedule:PredictionSchedule={season:'2026/27',fetchedAt:new Date(now).toISOString(),events:[{id:4,finished:true,dataChecked:true}],fixtures:[{id:1,event:4,kickoff:'2026-09-16T15:00:00Z',started:true,finished:true},{id:42,event:5,kickoff:fixture.kickoff,started:false,finished:false}]};
