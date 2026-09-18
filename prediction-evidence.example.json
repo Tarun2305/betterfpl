@@ -1,0 +1,13 @@
+{
+  "observations": [
+    {
+      "id": "example-observation-replace-before-use",
+      "source": "My match observation — replace this example",
+      "publishedAt": "2026-09-18T08:00:00Z",
+      "expiresAt": "2026-09-21T08:00:00Z",
+      "teams": ["BRE"],
+      "kind": "opinion",
+      "text": "EXAMPLE ONLY: replace with a real observation about positional role, chance quality or rotation. The example file is not loaded by the worker."
+    }
+  ]
+}

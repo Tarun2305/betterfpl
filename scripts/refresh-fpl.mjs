@@ -55,7 +55,16 @@ try {
   await mkdir(dirname(output), { recursive: true });
   await writeFile(temporary, JSON.stringify(data), 'utf8');
   await rename(temporary, output);
+  const seasonStart = new Date().getUTCMonth() >= 6 ? new Date().getUTCFullYear() : new Date().getUTCFullYear() - 1;
+  const schedule = { season: `${seasonStart}/${String(seasonStart+1).slice(-2)}`, fetchedAt: data.fetchedAt,
+    events: bootstrap.events.map(event => ({ id:event.id,finished:Boolean(event.finished),dataChecked:Boolean(event.data_checked) })),
+    fixtures: rawFixtures.map(fixture => ({ id:fixture.id,event:fixture.event,kickoff:fixture.kickoff_time,finished:Boolean(fixture.finished),started:Boolean(fixture.started) })) };
+  const schedulePath = resolve(root,'work','prediction-engine','schedule.json');
+  await mkdir(dirname(schedulePath),{recursive:true});
+  await writeFile(`${schedulePath}.tmp`,JSON.stringify(schedule));
+  await rename(`${schedulePath}.tmp`,schedulePath);
   console.log(`FPL data updated: ${players.length} players, ${fixtures.length} upcoming fixtures.`);
 } catch (error) {
   console.warn(`Could not refresh FPL data. The last cache or demonstration data will be used. ${error instanceof Error ? error.message : ''}`);
+  process.exitCode = 1;
 }

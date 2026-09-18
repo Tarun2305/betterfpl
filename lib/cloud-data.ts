@@ -30,6 +30,14 @@ async function downloadText(path: string) {
   return data.text();
 }
 
+export async function readCloudPredictions() {
+  const client=createStorageClient();
+  const {data,error}=await client.storage.from(process.env.SUPABASE_STORAGE_BUCKET || 'betterfpl-cache').download('predictions/latest.json');
+  if (error && String((error as {statusCode?:string}).statusCode)==='404') return {predictions:{},fixtures:[],gameweek:null,message:'Awaiting the first scheduled predictions.'};
+  if (error || !data) throw error || new Error('Prediction cache unavailable');
+  return JSON.parse(await data.text());
+}
+
 export async function readCloudDataset(dataset: CloudDataset) {
   const manifest = JSON.parse(await downloadText('current.json')) as SnapshotManifest;
   if (!/^snapshots\/[A-Za-z0-9._-]+$/.test(manifest.snapshot)) {

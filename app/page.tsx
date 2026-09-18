@@ -13,6 +13,7 @@ import { ClubBadge } from '@/components/club-badge';
 import { MatchCentre, TacticalLab } from '@/components/analytics-workbench';
 
 import { FixtureEdges, aggregatePlayers } from '@/components/analysis-lab';
+import { PredictionEngine } from '@/components/prediction-engine';
 
 import { Badge } from '@/components/ui/badge';
 
@@ -930,7 +931,7 @@ export default function Home() {
 
           {view === 'projections' && <div>
 
-            <div className="mb-4 flex justify-start"><Tabs value={projectionTab} onValueChange={setProjectionTab}><TabsList className="group-data-horizontal/tabs:h-11"><TabsTrigger className="px-5 text-base font-bold" value="players">Player projections</TabsTrigger><TabsTrigger className="px-5 text-base font-bold" value="fixtures">Fixture edges</TabsTrigger></TabsList></Tabs></div>
+            <div className="mb-4 flex justify-start overflow-x-auto"><Tabs value={projectionTab} onValueChange={setProjectionTab}><TabsList className="group-data-horizontal/tabs:h-11"><TabsTrigger className="px-5 text-base font-bold" value="players">Player projections</TabsTrigger><TabsTrigger className="px-5 text-base font-bold" value="fixtures">Fixture edges</TabsTrigger><TabsTrigger className="px-5 text-base font-bold" value="engine">Prediction Engine</TabsTrigger></TabsList></Tabs></div>
 
             {projectionTab === 'players' ? <>
 
@@ -942,7 +943,7 @@ export default function Home() {
 
               <p className="mt-3 text-sm text-muted-foreground">These are planning estimates, not bookmaker odds or an official FPL prediction. Double gameweeks are counted when present in the fixture feed.</p>
 
-            </> : <FixtureEdges fpl={data} analytics={analytics} />}
+            </> : projectionTab === 'fixtures' ? <FixtureEdges fpl={data} analytics={analytics} /> : <PredictionEngine fpl={data} analytics={analytics} enrichment={enrichment} />}
 
           </div>}
 

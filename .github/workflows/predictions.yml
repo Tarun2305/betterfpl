@@ -1,0 +1,46 @@
+name: Publish gameweek predictions
+
+on:
+  schedule:
+    # Cheap fixture checks only. Jev runs at most once for each of two GW releases.
+    - cron: '37 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: betterfpl-prediction-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.BETTERFPL_SUPABASE_KEY }}
+      SUPABASE_STORAGE_BUCKET: betterfpl-cache
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      PREDICTION_MAX_TOKENS: '500000'
+      PREDICTION_PYTHON: python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Check fixture timing without model calls
+        id: check
+        run: node scripts/prediction-check.mjs
+      - run: npm ci
+        if: steps.check.outputs.due == 'true'
+      - uses: actions/setup-python@v7
+        if: steps.check.outputs.due == 'true'
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+        if: steps.check.outputs.due == 'true'
+      - run: node --import tsx scripts/prediction-cloud.ts
+        if: steps.check.outputs.due == 'true'

@@ -6,7 +6,12 @@
     "node": ">=20.9.0"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev-local.mjs",
+    "predictions:watch": "tsx scripts/prediction-worker.ts --watch",
+    "predictions:once": "tsx scripts/prediction-worker.ts",
+    "predictions:dry-run": "tsx scripts/prediction-worker.ts --dry-run",
+    "predictions:plan": "tsx scripts/prediction-worker.ts --plan",
+    "test:predictions": "tsx --test scripts/test-prediction-pipeline.ts",
     "build": "next build",
     "start": "next start",
     "lint": "oxlint",
@@ -16,6 +21,7 @@
     "@base-ui/react": "1.7.0",
     "@shadcn/react": "0.3.0",
     "@supabase/supabase-js": "2.57.4",
+    "@typesafe-ai/sdk": "0.6.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
@@ -30,7 +36,9 @@
     "react-resizable-panels": "4.5.8",
     "recharts": "3.8.0",
     "shadcn": "4.18.0",
+    "sql.js": "1.13.0",
     "tailwind-merge": "3.6.0",
+    "tsx": "4.20.6",
     "tw-animate-css": "1.4.0"
   },
   "devDependencies": {
@@ -38,6 +46,7 @@
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "@types/sql.js": "1.4.9",
     "oxfmt": "0.61.0",
     "oxlint": "1.76.0",
     "oxlint-tsgolint": "7.0.2001",
