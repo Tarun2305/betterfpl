@@ -580,6 +580,9 @@ export default function Home() {
       .slice(0, 3);
   }, [data.fixtures]);
 
+  // The briefing follows the upcoming fixture round, not the last reporting event.
+  const briefingGameweek = headlineFixtures[0]?.event ?? data.gameweek;
+
   const visibleProjectedPlayers = useMemo(() => {
 
     const needle = projectionQuery.trim().toLowerCase();
@@ -823,12 +826,12 @@ export default function Home() {
           {view === 'home' && <div className="home-dashboard">
             <section className="home-hero home-panel">
               <div className="home-hero-content relative z-10">
-                <Badge className="mb-3 bg-white/15 text-white hover:bg-white/15">Gameweek {data.gameweek ?? '—'} briefing</Badge>
+                <Badge className="mb-3 bg-white/15 text-white hover:bg-white/15">Gameweek {briefingGameweek ?? '—'} briefing</Badge>
                 <h2>Your gameweek,<br /><span>read at a glance.</span></h2>
                 <div className="home-news-list">{newsStories.map((story) => <a key={story.id} href={story.url} target="_blank" rel="noreferrer"><span>{story.title}</span><small>{story.source}{story.date ? ` · ${formatFixtureDate(story.date)}` : ''} <ArrowRight className="size-3" /></small></a>)}</div>
                 <div className="home-hero-actions"><Button variant="secondary" onClick={() => setView('projections')}>Explore projections <ArrowRight className="size-4" /></Button><Button className="border-white/30 bg-white/10 text-white hover:bg-white/20" variant="outline" onClick={() => setView('planner')}>Open planner</Button><span>Data refreshed {formatRefreshTime(data.fetchedAt)}</span></div>
               </div>
-              <div className="home-orbit" aria-hidden="true"><span>{data.gameweek ?? 'FPL'}</span><small>GW</small></div>
+              <div className="home-orbit" aria-hidden="true"><span>{briefingGameweek ?? 'FPL'}</span><small>GW</small></div>
             </section>
 
             <section className="home-panel home-picks">
