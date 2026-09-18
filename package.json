@@ -12,6 +12,7 @@
     "predictions:dry-run": "tsx scripts/prediction-worker.ts --dry-run",
     "predictions:plan": "tsx scripts/prediction-worker.ts --plan",
     "test:predictions": "tsx --test scripts/test-prediction-pipeline.ts",
+    "test:delivery": "node scripts/test-snapshot-delivery.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "oxlint",

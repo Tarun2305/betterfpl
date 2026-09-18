@@ -14,17 +14,23 @@ type SnapshotManifest = {
   generatedAt: string;
 };
 
-function createStorageClient() {
+function createStorageClient(customFetch?: typeof fetch) {
   const url = process.env.SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
   if (!url || !secretKey) throw new Error('Supabase cloud cache is not configured');
   return createClient(url, secretKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    ...(customFetch ? { global: { fetch: customFetch } } : {}),
   });
 }
 
 async function downloadText(path: string) {
-  const client = createStorageClient();
+  const client = createStorageClient((input, init) => fetch(input, {
+    ...init,
+    cache: 'force-cache',
+    // Snapshot files are immutable; only the current pointer needs polling.
+    next: { revalidate: path === 'current.json' ? 300 : 86400 },
+  }));
   const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'betterfpl-cache';
   const { data, error } = await client.storage.from(bucket).download(path);
   if (error || !data) throw error || new Error(`Cloud object ${path} was empty`);

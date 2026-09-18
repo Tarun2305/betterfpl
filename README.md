@@ -26,7 +26,9 @@ No FPL login is required. Shortlists, notes, theme and planner choices are store
 
 ## Data and projections
 
-The dashboard combines public FPL data with Understat match and player metrics, selected WhoScored event data and team-strength ratings. Snapshots are refreshed automatically, with bundled demonstration data available as a fallback.
+The dashboard combines public FPL data with Understat match and player metrics, selected WhoScored event data and team-strength ratings. Snapshots are refreshed automatically each day and stored in Supabase. The homepage includes saved player data on first load, while detailed analytics load when needed. Shared delivery caches refresh on a five-minute interval; the homepage shows when the underlying FPL data was last updated.
+
+If cloud data is unavailable, the site can display its bundled saved snapshot and identifies this fallback. Data is not real-time, so check official FPL information before a deadline.
 
 Player projections deliberately use a simple, understandable model: recent form and season points-per-match are adjusted for fixture difficulty, expected minutes and availability. They are planning estimates—not official predictions, bookmaker odds or guarantees.
 
