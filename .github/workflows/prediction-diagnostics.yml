@@ -6,6 +6,10 @@ on:
         description: Release ID to inspect (read-only)
         required: true
         type: string
+      replay_fixture:
+        description: Optional rejected fixture ID; sends ONE potentially paid Jev request without publishing
+        required: false
+        type: string
 permissions:
   contents: read
 jobs:
@@ -25,3 +29,5 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.BETTERFPL_SUPABASE_KEY }}
           SUPABASE_STORAGE_BUCKET: betterfpl-cache
           DIAGNOSE_RELEASE: ${{ inputs.release }}
+          DIAGNOSE_REPLAY_FIXTURE: ${{ inputs.replay_fixture }}
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
