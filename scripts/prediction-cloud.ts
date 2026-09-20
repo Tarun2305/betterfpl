@@ -192,6 +192,7 @@ try {
       );
       failed = record.status !== 'complete';
       console.log(`${release.id}: ${record.status}`);
+      for (const error of record.errors) console.error(error);
     } finally {
       const bundle = publication(
         store,

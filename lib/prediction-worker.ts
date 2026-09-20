@@ -4,7 +4,16 @@ import { PredictionStore } from './prediction-store';
 import type { PredictionRelease } from './prediction-schedule';
 
 export type ReleaseRecord = PredictionRelease & { status:'running' | 'complete' | 'partial'; checkedAt:string; questionVersion:string; errors:string[] };
-export type SavedFixture = { releaseId:string; fixtureId:number; status:'sending' | 'complete' | 'failed' | 'uncertain' | 'skipped'; result?:FixturePrediction; error?:string; request?:PreparedPrediction['payload']; estimatedTokens?:number; checkedAt:string };
+export type SavedFixture = { releaseId:string; fixtureId:number; status:'sending' | 'complete' | 'failed' | 'uncertain' | 'skipped'; result?:FixturePrediction; error?:string; diagnostic?:{name:string;status?:number;requestId?:string;message:string}; request?:PreparedPrediction['payload']; estimatedTokens?:number; checkedAt:string };
+export function predictionDiagnostic(error:unknown):NonNullable<SavedFixture['diagnostic']> {
+  const e=error as {name?:string;status?:number;requestId?:string;message?:string};
+  let message=typeof e?.message==='string'?e.message:'Unknown prediction failure';
+  for(const key of ['TYPESAFE_API_KEY','SUPABASE_SECRET_KEY','BETTERFPL_SUPABASE_KEY']) {
+    const secret=process.env[key];if(secret)message=message.split(secret).join('[REDACTED]');
+  }
+  message=message.replace(/Bearer\s+\S+/gi,'Bearer [REDACTED]').slice(0,4000);
+  return {name:e?.name??'Error',status:e?.status,requestId:e?.requestId,message};
+}
 export async function runPredictionRelease(store: PredictionStore, release: PredictionRelease, input: Omit<PredictionInput,'fixtureId'>,
   options: { evaluate?:(prepared:PreparedPrediction)=>Promise<FixturePrediction>; now?:()=>number; maxTokens?:number; retryFailed?:boolean; maxFixtures?:number } = {}) {
   const now = options.now ?? Date.now;
@@ -43,7 +52,7 @@ export async function runPredictionRelease(store: PredictionStore, release: Pred
       const status = (error as {status?:number}).status;
       const definite = status && [400,401,403,404,422,429].includes(status);
       const message = definite ? `Provider rejected request (HTTP ${status}); explicit retry required.` : 'Request outcome uncertain; may have been charged. Review before retrying.';
-      store.put('fixtures',key,{...item,status:definite?'failed':'uncertain',error:message}); await store.save();
+      store.put('fixtures',key,{...item,status:definite?'failed':'uncertain',error:message,diagnostic:predictionDiagnostic(error)}); await store.save();
       record.errors.push(`${fixtureId}: ${message}`); break;
     }
   }

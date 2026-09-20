@@ -42,7 +42,7 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
         if: steps.check.outputs.due == 'true'
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         if: steps.check.outputs.due == 'true'
         with:
           path: data/soccerdata
@@ -50,3 +50,9 @@ jobs:
           restore-keys: football-history-v1-
       - run: node --import tsx scripts/prediction-cloud.ts
         if: steps.check.outputs.due == 'true'
+      - name: Preserve downloaded history even if prediction generation fails
+        uses: actions/cache/save@v4
+        if: ${{ !cancelled() && steps.check.outputs.due == 'true' && hashFiles('data/soccerdata/prediction-history/*.json') != '' }}
+        with:
+          path: data/soccerdata
+          key: football-history-v1-${{ github.run_id }}-${{ github.run_attempt }}

@@ -98,3 +98,12 @@ test('cloud checkpoint failure prevents any paid request',async()=>{
   await assert.rejects(runPredictionRelease(store,planReleases(schedule,now)[0],input,{evaluate:async p=>{calls++;return mock(p);},now:()=>now}),/cloud unavailable/);
   assert.equal(calls,0);store.close();
 });
+import {predictionDiagnostic} from '../lib/prediction-worker';
+void test('private failure diagnostics preserve rejection details and redact credentials',()=>{
+  const old=process.env.TYPESAFE_API_KEY;process.env.TYPESAFE_API_KEY='test-secret-value';
+  try {
+    const detail=predictionDiagnostic(Object.assign(new Error('Rejected test-secret-value Bearer another-secret'),{status:400,requestId:'request-123'}));
+    assert.equal(detail.status,400);assert.equal(detail.requestId,'request-123');
+    assert.ok(!detail.message.includes('test-secret-value'));assert.ok(!detail.message.includes('another-secret'));
+  } finally {if(old===undefined)delete process.env.TYPESAFE_API_KEY;else process.env.TYPESAFE_API_KEY=old;}
+});
