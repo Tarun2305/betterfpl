@@ -1,0 +1,27 @@
+name: Inspect prediction checkpoint
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Release ID to inspect (read-only)
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: node --import tsx scripts/prediction-diagnose.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.BETTERFPL_SUPABASE_KEY }}
+          SUPABASE_STORAGE_BUCKET: betterfpl-cache
+          DIAGNOSE_RELEASE: ${{ inputs.release }}
