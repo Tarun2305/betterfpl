@@ -18,9 +18,13 @@ import { distribution, trainFootballModel } from './football-model';
 import { fallbackHistory } from './forecast-features';
 import { statisticalForecast, reconcilePlayers } from './statistical-forecast';
 import { ENGINE_VERSION } from './prediction-version';
+import {
+  compactPredictionState,
+  assertPredictionPayload,
+} from './prediction-payload';
 
 export const MODEL = 'jev-1.13.0';
-export const QUESTION_VERSION = 'football-dual-v1';
+export const QUESTION_VERSION = 'football-dual-v2';
 export function preparePrediction(
   input: PredictionInput,
   fixture: Fixture,
@@ -38,6 +42,7 @@ export function preparePrediction(
       recentAppearances: p.minutes.expected >= 10 ? p.recentAppearances : [],
     })),
   };
+  const compactState = compactPredictionState(state);
   const questions: Questions = {};
   const rules = 'Apply definitions and estimated minutes.';
   for (const [side, code] of [
@@ -65,7 +70,7 @@ export function preparePrediction(
     );
   for (const p of eligible) {
     const index = state.players.findIndex((row) => row.id === p.id),
-      player = 'players[' + index + '] (' + p.name + ', ' + p.team + ')';
+      player = 'playerRows[' + index + '] (' + p.name + ', ' + p.team + ')';
     questions['goal_' + p.id] = noul(
       'Will ' + player + ' score in fixture? ' + rules,
     );
@@ -77,20 +82,17 @@ export function preparePrediction(
   // their answers after the durable paid-request checkpoint; no hidden second request.
   const newsPlayers = state.players.filter(
     (p) =>
-      state.qualitativeEvidence.some((e) => e.playerIds?.includes(p.id)) ||
+      compactState.qualitativeEvidence.some((e) =>
+        e.playerIds?.includes(p.id),
+      ) ||
       (p.news && p.minutes.appearanceProbability > 0),
   );
   for (const p of newsPlayers) {
     const context =
-      'Does attributed reporting explicitly establish that ' +
-      p.name +
-      ' (' +
-      p.team +
-      ', id ' +
-      p.id +
-      ') ';
-    const evidenceRule =
-      ' Follow definitions.humanEvidence. Speculation, question headlines and absent reporting mean no.';
+      'Does reporting explicitly establish playerRows[' +
+      state.players.findIndex((row) => row.id === p.id) +
+      '] ';
+    const evidenceRule = ' Apply definitions.humanEvidence.';
     questions['out_' + p.id] = noul(
       context + 'is ruled out of fixture?' + evidenceRule,
     );
@@ -121,9 +123,11 @@ export function preparePrediction(
       }),
     )
     .digest('hex');
-  const payload = { model: MODEL, state, questions };
+  const payload = { model: MODEL, state: compactState, questions };
+  assertPredictionPayload(payload);
   return {
     payload,
+    fullState: state,
     fingerprint,
     eligible,
     newsPlayers,
@@ -195,7 +199,7 @@ export function validatePrediction(
   }));
   const home = goals(h),
     away = goals(a),
-    state = prepared.payload.state;
+    state = prepared.fullState;
   const reconciled = reconcilePlayers(
     rawPlayers,
     home,
@@ -213,7 +217,7 @@ export function validatePrediction(
     elapsedMs,
     fingerprint: prepared.fingerprint,
     createdAt: new Date(now).toISOString(),
-    evidence: state.qualitativeEvidence,
+    evidence: prepared.payload.state.qualitativeEvidence,
     engineVersion: ENGINE_VERSION,
     coverage: state.coverage,
     newsCoverage: prepared.newsCoverage,

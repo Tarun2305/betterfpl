@@ -296,3 +296,47 @@ void test('release migration preserves timing and never reopens started gameweek
   assert.notEqual(updated.id, old.id);
   assert.equal(planReleases(schedule, Date.parse(fixture.kickoff)).length, 0);
 });
+import {
+  compactPredictionState,
+  assertPredictionPayload,
+  STATE_BYTE_LIMIT,
+} from '../lib/prediction-payload';
+void test('compact Jev payload preserves identities and rates, bounds context before sending', () => {
+  const state = buildPredictionState(input, fixture, now);
+  state.qualitativeEvidence = Array.from({ length: 16 }, (_, i) => ({
+    id: String(i),
+    source: 'Test feed',
+    publishedAt: new Date(now - 1000).toISOString(),
+    expiresAt: new Date(now + 1000).toISOString(),
+    teams: [fixture.homeCode],
+    kind: 'reported' as const,
+    text: 'Reported availability update. '.repeat(50),
+  }));
+  const compact = compactPredictionState(state);
+  assert.ok(Buffer.byteLength(JSON.stringify(compact)) <= STATE_BYTE_LIMIT);
+  assert.deepEqual(
+    compact.players,
+    state.players.map((p) => ({ id: p.id, providerId: p.providerId })),
+  );
+  assert.equal(compact.playerRows[0][12], state.players[0].nonPenaltyXgPer90);
+  assert.equal(compact.playerRows[0][20], state.players[0].minutes.expected);
+  assert.ok(compact.qualitativeEvidence.length > 0);
+  assert.throws(
+    () =>
+      assertPredictionPayload({
+        model: 'test',
+        state: 'x'.repeat(24001),
+        questions: {},
+      }),
+    /context budget/,
+  );
+  assert.throws(
+    () =>
+      assertPredictionPayload({
+        model: 'test',
+        state: {},
+        questions: { huge: { type: 'noul', instructions: 'x'.repeat(50000) } },
+      }),
+    /context budget/,
+  );
+});
